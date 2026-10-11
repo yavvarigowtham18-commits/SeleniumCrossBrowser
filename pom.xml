@@ -6,15 +6,9 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.devops</groupId>
-    <artifactId>selenium-cross-browser</artifactId>
+    <groupId>com.selenium</groupId>
+    <artifactId>SeleniumCrossBrowser</artifactId>
     <version>1.0-SNAPSHOT</version>
-
-    <name>Selenium Cross-Browser Testing</name>
-    <description>
-        Automated cross-browser testing using Selenium WebDriver,
-        Chrome, Firefox, TestNG and GitHub Actions.
-    </description>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -23,8 +17,6 @@
         <selenium.version>4.27.0</selenium.version>
         <testng.version>7.10.2</testng.version>
 
-        <!-- Default: launch browsers visibly on a local machine.
-             Override with -Dheadless=true for CI. -->
         <headless>false</headless>
         <baseUrl>http://localhost:8000</baseUrl>
     </properties>
@@ -37,7 +29,7 @@
             <version>${selenium.version}</version>
         </dependency>
 
-        <!-- TestNG test framework -->
+        <!-- TestNG testing framework -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
@@ -48,7 +40,15 @@
 
     <build>
         <plugins>
-            <!-- Compile tests using Java 21 -->
+
+            <!-- Explicitly pin the Maven Resources Plugin for CI -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+            </plugin>
+
+            <!-- Compile using Java 21 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -58,7 +58,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Execute TestNG tests -->
+            <!-- Run TestNG tests through Maven -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -70,6 +70,7 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
 
