@@ -1,6 +1,8 @@
 
 package tests;
 
+import java.time.Duration;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -8,6 +10,8 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -20,11 +24,13 @@ public class CrossBrowserTest {
     private static final boolean HEADLESS =
             Boolean.parseBoolean(System.getProperty("headless", "false"));
 
+    private static final Duration WAIT_TIMEOUT = Duration.ofSeconds(10);
+
     @DataProvider(name = "browsers")
     public Object[][] browsers() {
-        return new Object[][]{
-                {"chrome"},
-                {"firefox"}
+        return new Object[][] {
+                { "chrome" },
+                { "firefox" }
         };
     }
 
@@ -53,6 +59,10 @@ public class CrossBrowserTest {
         );
     }
 
+    private WebDriverWait createWait(WebDriver driver) {
+        return new WebDriverWait(driver, WAIT_TIMEOUT);
+    }
+
     @Test(dataProvider = "browsers")
     public void verifyHomePage(String browser) {
         WebDriver driver = createDriver(browser);
@@ -67,13 +77,15 @@ public class CrossBrowserTest {
             );
 
             Assert.assertTrue(
-                    driver.findElement(By.id("login-form")).isDisplayed(),
+                    createWait(driver).until(
+                            ExpectedConditions.visibilityOfElementLocated(
+                                    By.id("login-form")
+                            )
+                    ).isDisplayed(),
                     "Login form should be visible"
             );
 
-            System.out.println(
-                    browser + ": Homepage test passed"
-            );
+            System.out.println(browser + ": Homepage test passed");
 
         } finally {
             driver.quit();
@@ -87,8 +99,13 @@ public class CrossBrowserTest {
         try {
             driver.get(BASE_URL);
 
-            driver.findElement(By.id("username"))
-                    .sendKeys("student");
+            WebDriverWait wait = createWait(driver);
+
+            wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("username")
+                    )
+            ).sendKeys("student");
 
             driver.findElement(By.id("password"))
                     .sendKeys("demo123");
@@ -96,8 +113,11 @@ public class CrossBrowserTest {
             driver.findElement(By.id("login-button"))
                     .click();
 
-            WebElement dashboard =
-                    driver.findElement(By.id("dashboard"));
+            WebElement dashboard = wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("dashboard")
+                    )
+            );
 
             Assert.assertTrue(
                     dashboard.isDisplayed(),
@@ -105,14 +125,15 @@ public class CrossBrowserTest {
             );
 
             Assert.assertTrue(
-                    driver.findElement(By.id("welcome-message"))
-                            .getText().contains("student"),
+                    wait.until(
+                            ExpectedConditions.visibilityOfElementLocated(
+                                    By.id("welcome-message")
+                            )
+                    ).getText().contains("student"),
                     "Welcome message should include the username"
             );
 
-            System.out.println(
-                    browser + ": Valid login test passed"
-            );
+            System.out.println(browser + ": Valid login test passed");
 
         } finally {
             driver.quit();
@@ -126,8 +147,13 @@ public class CrossBrowserTest {
         try {
             driver.get(BASE_URL);
 
-            driver.findElement(By.id("username"))
-                    .sendKeys("wronguser");
+            WebDriverWait wait = createWait(driver);
+
+            wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("username")
+                    )
+            ).sendKeys("wronguser");
 
             driver.findElement(By.id("password"))
                     .sendKeys("wrongpass");
@@ -135,8 +161,18 @@ public class CrossBrowserTest {
             driver.findElement(By.id("login-button"))
                     .click();
 
-            WebElement message =
-                    driver.findElement(By.id("message"));
+            WebElement message = wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("message")
+                    )
+            );
+
+            wait.until(
+                    ExpectedConditions.textToBe(
+                            By.id("message"),
+                            "Invalid username or password."
+                    )
+            );
 
             Assert.assertEquals(
                     message.getText(),
@@ -150,9 +186,7 @@ public class CrossBrowserTest {
                     "Login section should remain visible"
             );
 
-            System.out.println(
-                    browser + ": Invalid login test passed"
-            );
+            System.out.println(browser + ": Invalid login test passed");
 
         } finally {
             driver.quit();
@@ -166,8 +200,14 @@ public class CrossBrowserTest {
         try {
             driver.get(BASE_URL);
 
-            driver.findElement(By.id("username"))
-                    .sendKeys("student");
+            WebDriverWait wait = createWait(driver);
+
+            // Enter valid credentials.
+            wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("username")
+                    )
+            ).sendKeys("student");
 
             driver.findElement(By.id("password"))
                     .sendKeys("demo123");
@@ -175,14 +215,39 @@ public class CrossBrowserTest {
             driver.findElement(By.id("login-button"))
                     .click();
 
-            Assert.assertTrue(
-                    driver.findElement(By.id("dashboard"))
-                            .isDisplayed(),
-                    "Dashboard should appear before logout"
+            // Wait until the dashboard is visible.
+            wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("dashboard")
+                    )
             );
 
-            driver.findElement(By.id("logout-button"))
-                    .click();
+            // Click logout.
+            wait.until(
+                    ExpectedConditions.elementToBeClickable(
+                            By.id("logout-button")
+                    )
+            ).click();
+
+            // Wait for the dashboard to become hidden.
+            wait.until(
+                    ExpectedConditions.invisibilityOfElementLocated(
+                            By.id("dashboard")
+                    )
+            );
+
+            // Verify that the login screen has returned.
+            wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("login-section")
+                    )
+            );
+
+            wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.id("username")
+                    )
+            );
 
             Assert.assertTrue(
                     driver.findElement(By.id("login-section"))
@@ -196,9 +261,7 @@ public class CrossBrowserTest {
                     "Dashboard should be hidden after logout"
             );
 
-            System.out.println(
-                    browser + ": Logout test passed"
-            );
+            System.out.println(browser + ": Logout test passed");
 
         } finally {
             driver.quit();
